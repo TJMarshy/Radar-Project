@@ -1,7 +1,3 @@
-%% Current Version : 
-%8 Cosine Antennas, Linear Array (not fully defined)
-
-
 %%
 % The following table summarizes the radar parameters.
 % 
