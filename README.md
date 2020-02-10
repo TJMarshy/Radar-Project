@@ -7,7 +7,7 @@ Current Version 1.0
 Features:
 
 8 Cosine Antenna - spaced by 0.5 lambda
-1 Target
+1 Target- 0.5m on boresights
 Go Through Loop and produce Data for 8 Antenna
 
 
