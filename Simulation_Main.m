@@ -44,6 +44,7 @@ end
 subplot(133);
 contourf(as,rs,abs(zs))
 ylim([0 10])
+disp(2);
 
 
 

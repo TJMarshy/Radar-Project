@@ -7,4 +7,4 @@ Current Version 1.0
 Features:
 
 Takes Data and Creates Basic Range Angle Map
-Create Basic Geometric Simulation and get correct range information but not angle
+Create Basic Geometric Simulation and get correct range information but not angle.
