@@ -1,3 +1,4 @@
+%% Set-up/Constants
 data = load('experiment_1_fan_on.mat');
 data = data.DATAr;
 
@@ -13,24 +14,26 @@ t = [0 : 1/fss : tm];
 
 %% Geom Sim 2D
 % assume Tx element is a origin but assuming target radiates isotropically
-% atm so doesnt matter
+% atm so doesnt matter 
 RxArray = zeros(29,2);
 RxSig = zeros((length(t)-1)/(fss/fs),29);
-Reflector = [0,5];
+Reflector = [5,10];
 
 
 for i = 1:29
     RxArray(i,:) = [i 0] * (lambda/2); %seperate 29 elements by distance lambda/2 
-    tdelay = (sqrt((Reflector(1)-RxArray(i,1))^2 + (Reflector(2)-RxArray(i,1))^2)/c);
-    s_delay = exp(2*pi*1j*(fc*(t-tdelay)+k*(t-tdelay).^2));
-    mix = exp(2*pi*1j*(fc*t+k*t.^2)) .* conj(s_delay);
-    RxSig(:,i) = mix(1:(fss/fs):(end-1));
+    tdelay = 2*(sqrt((RxArray(i,1)-Reflector(1))^2 ...
+        + (RxArray(i,2)-Reflector(2))^2)/c); %find distance between reflector and array element
+    s_delay = exp(pi*1j*(fc*(t-tdelay)+k*(t-tdelay).^2)); %produce delayed chirp
+    mix = exp(pi*1j*(fc*t+k*t.^2)) .* conj(s_delay); %stretch process with original signal
+    RxSig(:,i) = mix(1:(fss/fs):(end-1));            %Reduce sampling rate to 2e6 after stretch
 end
 
-[rs,as,Ran,Ang,zs] = RAngCalc(RxSig,k,fs);
+[rs,as,Ran,Ang,zs] = RAngCalc(RxSig,k,fs);          %do data processing
 
-figure;
-subplot(131);
+figure;                         %plot range angle and contour profiles
+title('Sim Data')               % N.B. have to reverse angle axes not sure why yet
+subplot(131);                   
 for i=1:29
     plot(rs,abs(Ran(:,i)));
     hold on
@@ -38,20 +41,19 @@ end
 
 subplot(132);
 for i=1:29
-    plot(as,abs(Ang(i,:)));
+    plot(-as,abs(Ang(i,:)));
     hold on
 end
 subplot(133);
-contourf(as,rs,abs(zs))
-ylim([0 10])
-disp(2);
-
+contourf(-as,rs,abs(zs))
+ylim([0 20])
 
 
 %% Real Data Bit
-[r,a,Ra,An,z] = RAngCalc(data,k,fs);
+[r,a,Ra,An,z] = RAngCalc(data,k,fs); %do same as above but with the real data
 
 figure;
+title('Real Data')
 subplot(131);
 for i=1:29
     plot(r,abs(Ra(:,i)));
