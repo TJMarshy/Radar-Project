@@ -17,7 +17,7 @@ t = [0 : 1/fss : tm];
 % atm so doesnt matter 
 RxArray = zeros(29,2);
 RxSig = zeros((length(t)-1)/(fss/fs),29);
-Reflector = [5,10];
+Reflector = [5,5];
 
 
 for i = 1:29
@@ -80,6 +80,7 @@ function [Range, Angle, R, A, ReflecMap] = RAngCalc(data,sweep_slope,fs)
     A = fftshift(fft(data,[],2),2);
     ReflecMap = fftshift(fft(R,[],2),2);
     Angle = asind([-1 : 2/(size(data,2)-1) : 1]);
+    disp(Angle);
     Freq = [0 : fs/(size(data,1)-1) : fs];
     Range = (Freq*3e8) ./ (2*sweep_slope);
 
