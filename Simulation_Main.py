@@ -1,9 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as sio
+import scipy.interpolate as si
 
 data = sio.loadmat('experiment_1_fan_on.mat')
-data = data['DATAr']
+
+data = data['DATAr'] *1e-6   #just to get decibels of real data to 0 , no understanding yet
 
 
 fc = 76e9
@@ -16,7 +18,8 @@ fs = 2e6   #sample rate after stretch proccessing
 fss = 2e9  #sample rate to generate waveforms
 t = np.arange(0, tm, 1/fss)
 TxPower = 1e-2 #/watts  10dBm
-Gain = 15 #change to function of angle later
+txGain = 17 #change to function of angle later
+rxGain = 15
 
 def RAngCalc(data,sweep_slope,fs):
     R = np.fft.fft(data,None,0)
@@ -35,6 +38,21 @@ def RAngCalc(data,sweep_slope,fs):
 
     return [Range, Angle, R, A, ReflecMap]
 
+
+class Object():
+    '''Define object to give its parameters'''
+
+    def __init__(self, x, y, z, rcs):
+
+        self.x = x
+        self.y = y
+        self.z = z
+        self.rcs = rcs
+
+Corn1, Corn2, Fan, Sphere = Object(0,3.87,0.83,1), Object(-0.58,3.87,0.83,1), Object(1.25, 1.94, .95, 1), Object(-1.10, 1.35, 0.89, 1)
+Reflector = [Corn1,Corn2, Fan, Sphere]  #each element = [x,y,rcs]  maybe z later #maybe class aswell
+
+
 # Geom Sim 2D
 # assume Tx element is a origin but assuming target radiates isotropically
 # atm so doesnt matter 
@@ -42,15 +60,15 @@ RxArray = np.zeros((29,2))
 Temp = np.zeros((len(t),29),dtype=complex)
 RxSig = np.zeros((int(len(t)/(fss/fs)),29),dtype=complex)
 
-Reflector = [[0,3.87,1.72467],[-0.58,3.87,1.72467],[1.25,1.94,2.587],[-1.10,1.35,0.01337]]  #each element = [x,y,rcs]  maybe z later #maybe class aswell
+
 
 for Obj in Reflector:
 
     for i in range(29):
         RxArray[i] = [i*lamb/2,0] #seperate 29 elements by distance lamb/2 
-        dist = (np.sqrt((RxArray[i][0]-Obj[0])**2 + (RxArray[i][1]-Obj[1])**2)) #find distance between reflector and array element
+        dist = (np.sqrt((RxArray[i][0]-Obj.x)**2 + (RxArray[i][1]-Obj.y)**2)) #find distance between reflector and array element
         tdelay = (2*dist)/c
-        P_received =  (TxPower * (Gain**2) * Obj[2] * (lamb**2)) / ((4*np.pi)**3 * dist**4)   #https://www.radartutorial.eu/01.basics/The%20Radar%20Range%20Equation.en.html
+        P_received =  (TxPower * (txGain*rxGain) * Obj.rcs * (lamb**2)) / ((4*np.pi)**3 * dist**4)   #https://www.radartutorial.eu/01.basics/The%20Radar%20Range%20Equation.en.html
         Temp[:,i] = np.add(Temp[:,i],np.sqrt(P_received) * np.exp(np.pi*1j*(fc*np.subtract(t,tdelay)+k*(np.subtract(t,tdelay)**2)))) # produce delayed chirp
 
                       
@@ -72,15 +90,22 @@ ax[1].set_xlim([-np.pi/4, np.pi/4])#, ax[1].grid(False)
 [rs,asim,Ran,Ang,zs] = RAngCalc(RxSig,k,fs)           #do data processing
 
 #levels = np.linspace(0,1e4,100) 
-cm = ax[0].contourf(np.radians(-asim),rs,np.abs(zs),cmap='plasma')   #,levels=levels
+levels = np.linspace(-30,0,100)
+cm = ax[0].contourf(np.radians(-asim),rs,20*np.log10(np.abs(zs)/np.sqrt(TxPower)), levels=levels,cmap='jet', extend='both')   #
 cb = fig.colorbar(cm,ax=ax[0],shrink=0.5)
 
 # Real Data
 [r,a,Ra,An,z] = RAngCalc(data,k,fs) #do same as above but with the real data
 
-levels2 = np.linspace(0,2e4,100)
-cm1 = ax[1].contourf(np.radians(a),r,np.abs(z),levels=levels2, cmap='plasma')
+#levels2 = np.linspace(0,2e4,100)
+levels2 = np.linspace(-30,0,100)
+cm1 = ax[1].contourf(np.radians(a), r,20*np.log10(np.abs(z)/np.sqrt(TxPower)), levels=levels2, cmap='jet', extend='both') #
 cb1 = fig.colorbar(cm1,ax=ax[1],shrink=0.5)
+
+print(np.max(20*np.log10(np.abs(z)/np.sqrt(TxPower))))
+print(np.max(20*np.log10(np.abs(zs)/np.sqrt(TxPower))))
+
+
 
 
 plt.show()
