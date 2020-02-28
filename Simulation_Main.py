@@ -38,6 +38,16 @@ def RAngCalc(data,sweep_slope,fs):
 
     return [Range, Angle, R, A, ReflecMap]
 
+def delayedsig(dist,Obj):   #NEED TO INCLUDE DIFFERENT DISTANCES LEADING TO DIFFERENT POWER AND GROUND RADAR CROSS SECTION TYPE STUFF
+
+    delay = dist/c
+    delsig = np.exp(np.pi*1j*(fc*np.subtract(t,delay)+k*(np.subtract(t,delay)**2)))
+    P_received =  (TxPower * (txGain*rxGain) * Obj.rcs * (lamb**2)) / ((4*np.pi)**3 * dist**4) #https://www.radartutorial.eu/01.basics/The%20Radar%20Range%20Equation.en.html
+
+    sig = np.sqrt(P_received) * delsig
+    
+    return sig
+
 
 class Object():
     '''Define object to give its parameters'''
@@ -49,27 +59,35 @@ class Object():
         self.z = z
         self.rcs = rcs
 
-Corn1, Corn2, Fan, Sphere = Object(0,3.87,0.83,1), Object(-0.58,3.87,0.83,1), Object(1.25, 1.94, .95, 1), Object(-1.10, 1.35, 0.89, 1)
+Corn1, Corn2, Fan, Sphere = Object(0,3.87,0.83,5), Object(-0.58,3.87,0.83,5), Object(1.25, 1.94, .95, 1), Object(-1.10, 1.35, 0.89, 1)
 Reflector = [Corn1,Corn2, Fan, Sphere]  #each element = [x,y,rcs]  maybe z later #maybe class aswell
 
 
 # Geom Sim 2D
 # assume Tx element is a origin but assuming target radiates isotropically
 # atm so doesnt matter 
-RxArray = np.zeros((29,2))
+#RxArray = np.zeros((29,2))
+RxArray = [[i*lamb/2,0,0.98] for i in range(29)]
 Temp = np.zeros((len(t),29),dtype=complex)
 RxSig = np.zeros((int(len(t)/(fss/fs)),29),dtype=complex)
 
 
-
 for Obj in Reflector:
-
     for i in range(29):
-        RxArray[i] = [i*lamb/2,0] #seperate 29 elements by distance lamb/2 
-        dist = (np.sqrt((RxArray[i][0]-Obj.x)**2 + (RxArray[i][1]-Obj.y)**2)) #find distance between reflector and array element
-        tdelay = (2*dist)/c
-        P_received =  (TxPower * (txGain*rxGain) * Obj.rcs * (lamb**2)) / ((4*np.pi)**3 * dist**4)   #https://www.radartutorial.eu/01.basics/The%20Radar%20Range%20Equation.en.html
-        Temp[:,i] = np.add(Temp[:,i],np.sqrt(P_received) * np.exp(np.pi*1j*(fc*np.subtract(t,tdelay)+k*(np.subtract(t,tdelay)**2)))) # produce delayed chirp
+
+        dist = np.sqrt( (RxArray[i][0]-Obj.x)**2 + (RxArray[i][1]-Obj.y)**2 + (RxArray[i][2]-Obj.z)**2 )       #Direct Ray
+        X1 = (RxArray[i][0] * Obj.z + Obj.x * RxArray[i][2]) / (Obj.z + RxArray[i][2])              #find x,y,z position of reflection point
+        Y1 = (RxArray[i][1] + Obj.y) /2
+        Z1 = 0
+
+        dist1 = np.sqrt((RxArray[i][0] - X1)**2 + (RxArray[i][1] - Y1)**2 + (RxArray[i][2] - Z1)**2)  #array to ground
+        dist2 = np.sqrt((Obj.x - X1)**2 + (Obj.y - Y1)**2 + (Obj.z - Z1)**2)                          #ground to object
+
+        
+           
+        Temp[:,i] += delayedsig(2*dist,Obj) + delayedsig(2*(dist1+dist2),Obj) + delayedsig((dist+dist1+dist2),Obj) + delayedsig((dist+dist1+dist2),Obj)
+        #REMEMEBER THE ORDER PROBABLY MATTER EXPLORE MORE
+
 
                       
 
@@ -102,8 +120,6 @@ levels2 = np.linspace(-30,0,100)
 cm1 = ax[1].contourf(np.radians(a), r,20*np.log10(np.abs(z)/np.sqrt(TxPower)), levels=levels2, cmap='jet', extend='both') #
 cb1 = fig.colorbar(cm1,ax=ax[1],shrink=0.5)
 
-print(np.max(20*np.log10(np.abs(z)/np.sqrt(TxPower))))
-print(np.max(20*np.log10(np.abs(zs)/np.sqrt(TxPower))))
 
 
 
