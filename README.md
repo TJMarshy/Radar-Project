@@ -2,7 +2,7 @@
 Project for ananlysing simulation and experimnetal data from FMCW radar for range detection.
 
 
-Current Version 1.0
+Current Version 1.1
 
 Features:
 
@@ -12,11 +12,17 @@ correct angle info too, but need to reverse angle axes for simulated data, not s
 
 Now Has All targets at correct positions
 
+Now 4 ray reflections off floor
+
+Used TE Fresnels equations to calculate power loss from each reflection
+
+Consider different paths seperatley now taking into account their number of reflections/ distances travelled
+
+
 Still Need:
 
 Noise?
-Reflections?
-RCS?
-A room?
+RCS? from numerical stuff by propagation group
+Creat Profiles of objects in rooms for different data sets
 
-
+Notice angles are wrong for further out targets due to lower precision, so gonna test with more antenna just for curiosity
