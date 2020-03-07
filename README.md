@@ -2,7 +2,7 @@
 Project for ananlysing simulation and experimnetal data from FMCW radar for range detection.
 
 
-Current Version 1.1
+Current Version 1.2
 
 Features:
 
