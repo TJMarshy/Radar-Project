@@ -18,6 +18,7 @@ Used TE Fresnels equations to calculate power loss from each reflection
 
 Consider different paths seperatley now taking into account their number of reflections/ distances travelled
 
+Added interpolation, but currently limited to linear so may use interp2d to get other interpolation types
 
 Still Need:
 

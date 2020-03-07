@@ -7,7 +7,6 @@ data = sio.loadmat('experiment_1_fan_on.mat')
 
 data = data['DATAr'] *1e-6   #just to get decibels of real data to 0 , no understanding yet
 
-
 fc = 76e9
 c = 3e8
 lamb = c/fc
@@ -23,7 +22,17 @@ rxGain = 15
 n1 = 1 #refractive indicies for fresenel
 n2 = 2.5 #concrete floor https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=504907
 
+
 def RAngCalc(data,sweep_slope,fs):
+
+    Angle1 = np.linspace(-1,1,len(data.T),endpoint=True)
+    Angle1 = np.degrees(np.arcsin(Angle1))                  #arcsin as the array factor is proportional to the sin
+
+    Freq = np.linspace(0,fs,len(data),endpoint=True)   
+    Range = (Freq*3e8) / (2*sweep_slope)
+
+
+
     R = np.fft.fft(data,None,0)
 
     A = np.fft.fft(data,None,1)
@@ -31,12 +40,24 @@ def RAngCalc(data,sweep_slope,fs):
 
     ReflecMap = np.fft.fft(R,None,1)
     ReflecMap = np.fft.fftshift(ReflecMap,1)
+#new bit
+    #interp_ratio = 2
+    Angle = np.linspace(-1,1,59,endpoint=True)
+    Angle = np.degrees(np.arcsin(Angle))  
+    
 
-    Angle = np.linspace(-1,1,len(data.T),endpoint=True)
-    Angle = np.degrees(np.arcsin(Angle))                   #arcsin as the array factor is proportional to the sin
+    interp_mesh = np.array(np.meshgrid(Range, Angle, indexing='ij'))
+    interp_points = np.rollaxis(interp_mesh, 0, 3).reshape((-1, 2)) #create list of cooridnates
 
-    Freq = np.linspace(0,fs,len(data),endpoint=True)   
-    Range = (Freq*3e8) / (2*sweep_slope)
+    f = si.RegularGridInterpolator((Range,Angle1), A)
+    A = f(interp_points)
+    A = np.reshape(A,(len(Range), len(Angle)))
+
+    f = si.RegularGridInterpolator((Range,Angle1), ReflecMap)
+    ReflecMap = f(interp_points)
+    ReflecMap = np.reshape(ReflecMap,(len(Range), len(Angle)))
+
+    #end new bit
 
     return [Range, Angle, R, A, ReflecMap]
 
@@ -106,17 +127,17 @@ RxSig[:,:] = mix[0:-1:int(fss/fs)][:]#Reduce sampling rate to 2e6 after stretch
 
 fig, ax = plt.subplots(1,2,subplot_kw=dict(projection='polar'))
 ax[0].set_theta_zero_location("N"), ax[0].set_theta_direction(-1), ax[0].set_ylim([0, 5])   #create polar plots for comparing real data to simulation
-ax[0].set_xlim([-np.pi/4, np.pi/4]), ax[0].grid(False)
+ax[0].set_xlim([-np.pi/4, np.pi/4])#, ax[0].grid(False)
 
 ax[1].set_theta_zero_location("N"), ax[1].set_theta_direction(-1), ax[1].set_ylim([0, 5])
-ax[1].set_xlim([-np.pi/4, np.pi/4]), ax[1].grid(False)
+ax[1].set_xlim([-np.pi/4, np.pi/4])#, ax[1].grid(False)
 
 
 
 ## Sim Data Plotting/Analysis
 
 [rs,asim,Ran,Ang,zs] = RAngCalc(RxSig,k,fs)           #do data processing
- 
+
 levels = np.linspace(-30,0,100) #for deciblels
 cm = ax[0].contourf(np.radians(-asim),rs,20*np.log10(np.abs(zs)/np.sqrt(TxPower)), levels=levels,cmap='jet', extend='both')  #need -angle not sure why yet
 cb = fig.colorbar(cm,ax=ax[0],shrink=0.5)
@@ -129,14 +150,14 @@ cm1 = ax[1].contourf(np.radians(a), r,20*np.log10(np.abs(z)/np.sqrt(TxPower)), l
 cb1 = fig.colorbar(cm1,ax=ax[1],shrink=0.5)
 
 
-plt.show()
 
 
 
 
 
-'''
-uncomment to plot range and angle maps and stuff / non polar contours etc....
+
+
+#uncomment to plot range and angle maps and stuff / non polar contours etc....
 
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3)            #plot range angle and contour profiles
                                                   # N.B. have to reverse angle axes not sure why yet
@@ -153,9 +174,8 @@ for i in range(29):
    
 cm = ax3.contourf(-asim,rs,np.abs(zs),levels=levels)
 cb = fig.colorbar(cm)
-'''
 
-'''
+
 fig2, (ax5, ax6, ax7) = plt.subplots(1, 3)  
 
 ax5.set_xlim([0, 5])
@@ -165,9 +185,61 @@ ax7.set_ylim([0, 5])
 
 for i in range(29):
     ax5.plot(r,np.abs(Ra[:,i]))
-    ax6.plot(-a,np.abs(An[i,:]))
+    ax6.plot(a,np.abs(An[i,:]))
 
 cm2 = ax7.contourf(-a,r,np.abs(z),levels=levels)
 cb2 = fig2.colorbar(cm2)
 
+
+
+plt.show()
+
+
+
+
+
+
 '''
+    Angle = np.linspace(-1,1,29,endpoint=True)
+    Angle = np.degrees(np.arcsin(Angle))    
+
+    interp_mesh = np.array(np.meshgrid(Range, Angle))
+    interp_points = np.rollaxis(interp_mesh, 0, 3).reshape((-1, 2)) #create list of cooridnates
+    print(interp_points)
+
+    data = si.interpn((Range, Angle1), data, interp_points, method='linear')
+    data = data.reshape(len(Angle),len(Range)).T
+    
+    '''
+
+
+
+
+
+
+
+
+'''
+    Angle = np.linspace(-1,1,99,endpoint=True)
+    Angle = np.degrees(np.arcsin(Angle))   
+
+    f = si.RegularGridInterpolator((Range,Angle1),data)
+
+    interp_mesh = np.array(np.meshgrid(Range, Angle))
+    interp_points = np.rollaxis(interp_mesh, 0, 3).reshape((-1, 2)) #create list of cooridnates
+    
+    data = f(interp_points)
+    data = (data.reshape(len(Angle),len(Range))).T
+    print(data.shape)
+    print(Angle.shape)
+'''
+
+
+
+
+'''
+    oga,ogr = np.meshgrid(Range,Angle1)
+    AB, RB = np.meshgrid(Range,Angle)
+
+    og = np.c_[ogr.ravel(),oga.ravel()]
+    xx = np.c_[RB.ravel(),AB.ravel()]'''
