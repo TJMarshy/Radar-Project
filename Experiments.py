@@ -20,6 +20,7 @@ def fan_on():
     data = data['DATAr']
 
     Corn1, Corn2, Fan, Sphere = Object(0,3.87,0.83,1.72467), Object(-0.58,3.87,0.83,1.72467), Object(1.25, 1.94, .95, 2.587), Object(-1.10, 1.35, 0.89, 0.01337)
+    
     return data , [Corn1,Corn2, Fan, Sphere]  #create array of all objects with their x,y,z and rcs values need value for fan off/on
     
 
@@ -28,6 +29,7 @@ def fan_off():
     data = data['DATAr']
 
     Corn1, Corn2, Fan, Sphere = Object(0,3.87,0.83,1.72467), Object(-0.58,3.87,0.83,1.72467), Object(1.25, 1.94, .95, 2.587), Object(-1.10, 1.35, 0.89, 0.01337)
+    
     return data , [Corn1,Corn2, Fan, Sphere]  #create array of all objects with their x,y,z and rcs values need value for fan off/on
 
 def corner2():
@@ -35,12 +37,23 @@ def corner2():
     data = data['DATAr']
 
     Corn1, Corn2 = Object(0,3.87,0.83,1.72467), Object(-0.58,3.87,0.83,1.72467)
+    
     return data , [Corn1,Corn2] #create array of all objects with their x,y,z and rcs values need value for fan off/on
 
 
 def big1():
-    pass
+    data = sio.loadmat('experiment_4_bigreflector.mat')
+    data = data['DATAr']
+
+    Corn1, Corn2 = Object(0,3.87,0.83,1.72467), Object(-0.58,3.87,0.83,1.72467)
+
+    return data, [Corn1,Corn2]
+
 
 def big2():
-    pass
+    data = sio.loadmat('experiment_5_bigerflector.mat')
+    data = data['DATAr']
+ 
+    Corn1, Corn2 = Object(0,2,0.83,1.72467), Object(-0.58,2,0.83,1.72467)
 
+    return data, [Corn1,Corn2]

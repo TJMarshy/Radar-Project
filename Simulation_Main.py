@@ -21,6 +21,15 @@ n1 = 1 #refractive indicies for fresenel
 n2 = 2.5 #concrete floor https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=504907
 
 
+def add_zeros(array):
+
+    a = np.zeros((256,len(array.T)))
+    b = np.append(a,data,0)
+    new = np.append(b,a,0)
+
+    return new
+
+
 def RAngCalc(data,sweep_slope,fs):
 
     Angle1 = np.linspace(-1,1,len(data.T),endpoint=True)
@@ -29,6 +38,14 @@ def RAngCalc(data,sweep_slope,fs):
     Freq = np.linspace(0,fs,len(data),endpoint=True)   
     Range = (Freq*3e8) / (2*sweep_slope)
 
+    
+    interp_ratio = 6
+    Angle = np.linspace(-1,1,29*interp_ratio,endpoint=True)
+    Angle = np.degrees(np.arcsin(Angle))  
+    
+
+    interp_mesh = np.array(np.meshgrid(Range, Angle, indexing='ij'))
+    interp_points = np.rollaxis(interp_mesh, 0, 3).reshape((-1, 2)) #create list of cooridnates
 
 
     R = np.fft.fft(data,None,0)
@@ -38,24 +55,15 @@ def RAngCalc(data,sweep_slope,fs):
 
     ReflecMap = np.fft.fft(R,None,1)
     ReflecMap = np.fft.fftshift(ReflecMap,1)
-#new bit
-    #interp_ratio = 2
-    Angle = np.linspace(-1,1,29,endpoint=True)
-    Angle = np.degrees(np.arcsin(Angle))  
-    
 
-    interp_mesh = np.array(np.meshgrid(Range, Angle, indexing='ij'))
-    interp_points = np.rollaxis(interp_mesh, 0, 3).reshape((-1, 2)) #create list of cooridnates
+    A = si.interpn((Range,Angle1),A,interp_points)
 
-    f = si.RegularGridInterpolator((Range,Angle1), A)
-    A = f(interp_points)
     A = np.reshape(A,(len(Range), len(Angle)))
 
-    f = si.RegularGridInterpolator((Range,Angle1), ReflecMap)
-    ReflecMap = f(interp_points)
-    ReflecMap = np.reshape(ReflecMap,(len(Range), len(Angle)))
 
-    #end new bit
+    ReflecMap = si.interpn((Range,Angle1),ReflecMap,interp_points)
+
+    ReflecMap = np.reshape(ReflecMap,(len(Range), len(Angle)))
 
     return [Range, Angle, R, A, ReflecMap]
 
@@ -68,9 +76,11 @@ def delayedsig(dist):
     
     return delsig
 
-#data,Reflector = Ex.fan_on()
-data,Reflector = Ex.fan_off()
+data,Reflector = Ex.fan_on()
+#data,Reflector = Ex.fan_off()
 #data,Reflector = Ex.corner2()
+#data,Reflector = Ex.big1()
+#data,Reflector = Ex.big2()
 
 
 # Geom Sim 3D
@@ -111,7 +121,7 @@ for Obj in Reflector:  #loop through all objects and array elements
 
 mix = np.conj(Temp) * np.sqrt(TxPower)*np.exp(np.pi*1j*(fc*t+k*t**2))[:, np.newaxis]  #stretch process with original signal          
 RxSig[:,:] = mix[0:-1:int(fss/fs)][:]#Reduce sampling rate to 2e6 after stretch
-
+RxSig = add_zeros(RxSig)
 
 fig, ax = plt.subplots(1,2,subplot_kw=dict(projection='polar'))
 ax[0].set_theta_zero_location("N"), ax[0].set_theta_direction(-1), ax[0].set_ylim([0, 5])   #create polar plots for comparing real data to simulation
@@ -127,7 +137,7 @@ ax[1].set_xlim([-np.pi/4, np.pi/4])#, ax[1].grid(False)
 [rs,asim,Ran,Ang,zs] = RAngCalc(RxSig,k,fs)           #do data processing
 
 levels = np.linspace(-30,0,100) #for deciblels
-cm = ax[0].contourf(np.radians(-asim),rs,20*np.log10(np.abs(zs)/np.amax(np.abs(zs))), levels=levels,cmap='jet', extend='both')  #need -angle not sure why yet
+cm = ax[0].contourf(np.radians(asim),rs,20*np.log10(np.abs(zs)/np.amax(np.abs(zs))), levels=levels,cmap='jet', extend='both')  #need -angle not sure why yet
 cb = fig.colorbar(cm,ax=ax[0],shrink=0.5)
 
 ## Real Data Plotting/Analysis
@@ -156,11 +166,11 @@ ax3.set_ylim([0, 10])
 
 for i in range(29):
     ax1.plot(rs,np.abs(Ran[:,i]))
-    ax2.plot(-asim,np.abs(Ang[i,:]))
+    ax2.plot(asim,np.abs(Ang[i,:]))
 
 
    
-cm = ax3.contourf(-asim,rs,np.abs(zs),levels=levels)
+cm = ax3.contourf(asim,rs,np.abs(zs),levels=levels)
 cb = fig.colorbar(cm)
 
 
@@ -187,47 +197,26 @@ plt.show()
 
 
 
+
+
+
+
+
+
 '''
-    Angle = np.linspace(-1,1,29,endpoint=True)
-    Angle = np.degrees(np.arcsin(Angle))    
-
-    interp_mesh = np.array(np.meshgrid(Range, Angle))
-    interp_points = np.rollaxis(interp_mesh, 0, 3).reshape((-1, 2)) #create list of cooridnates
-    print(interp_points)
-
-    data = si.interpn((Range, Angle1), data, interp_points, method='linear')
-    data = data.reshape(len(Angle),len(Range)).T
+    interp_ratio = 4
+    Angle = np.linspace(-1,1,29*interp_ratio,endpoint=True)
+    Angle = np.degrees(np.arcsin(Angle))  
     
-    '''
 
-
-
-
-
-
-
-
-'''
-    Angle = np.linspace(-1,1,99,endpoint=True)
-    Angle = np.degrees(np.arcsin(Angle))   
-
-    f = si.RegularGridInterpolator((Range,Angle1),data)
-
-    interp_mesh = np.array(np.meshgrid(Range, Angle))
+    interp_mesh = np.array(np.meshgrid(Range, Angle, indexing='ij'))
     interp_points = np.rollaxis(interp_mesh, 0, 3).reshape((-1, 2)) #create list of cooridnates
-    
-    data = f(interp_points)
-    data = (data.reshape(len(Angle),len(Range))).T
-    print(data.shape)
-    print(Angle.shape)
+
+    f = si.RegularGridInterpolator((Range,Angle1), A)
+    A = f(interp_points)
+    A = np.reshape(A,(len(Range), len(Angle)))
+
+    f = si.RegularGridInterpolator((Range,Angle1), ReflecMap)
+    ReflecMap = f(interp_points)
+    ReflecMap = np.reshape(ReflecMap,(len(Range), len(Angle)))
 '''
-
-
-
-
-'''
-    oga,ogr = np.meshgrid(Range,Angle1)
-    AB, RB = np.meshgrid(Range,Angle)
-
-    og = np.c_[ogr.ravel(),oga.ravel()]
-    xx = np.c_[RB.ravel(),AB.ravel()]'''

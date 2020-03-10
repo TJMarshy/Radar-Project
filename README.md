@@ -18,14 +18,17 @@ Used TE Fresnels equations to calculate power loss from each reflection
 
 Consider different paths seperatley now taking into account their number of reflections/ distances travelled
 
-Added interpolation, but currently limited to linear so may use interp2d to get other interpolation types and currently interpolating after processing
+Added interpolation, but currently limited to linear
 
 Added Experiments file to load different experiment data
+
+Added zeros to sim data and now it almost perfectly matches the sim data and the interpolation is working a dreams
 
 Still Need:
 
 Noise?
 RCS? from numerical stuff by propagation group
-Finish Profiles of objects in rooms for different data sets
+Finish Profiles of objects in rooms for different data sets E.g. RCS for big reflector
 
-Notice angles are wrong for further out targets due to lower precision, so gonna test with more antenna just for curiosity
+Add emtpy array before and after real data to get the same sinc functions
+
