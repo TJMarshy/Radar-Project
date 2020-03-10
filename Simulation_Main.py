@@ -1,11 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.io as sio
 import scipy.interpolate as si
+import Experiments as Ex
 
-data = sio.loadmat('experiment_1_fan_on.mat')
 
-data = data['DATAr'] *1e-6   #just to get decibels of real data to 0 , no understanding yet
 
 fc = 76e9
 c = 3e8
@@ -42,7 +40,7 @@ def RAngCalc(data,sweep_slope,fs):
     ReflecMap = np.fft.fftshift(ReflecMap,1)
 #new bit
     #interp_ratio = 2
-    Angle = np.linspace(-1,1,59,endpoint=True)
+    Angle = np.linspace(-1,1,29,endpoint=True)
     Angle = np.degrees(np.arcsin(Angle))  
     
 
@@ -70,19 +68,9 @@ def delayedsig(dist):
     
     return delsig
 
-
-class Object():
-    '''Define object to give its parameters'''
-
-    def __init__(self, x, y, z, rcs):
-
-        self.x = x
-        self.y = y
-        self.z = z
-        self.rcs = rcs
-
-Corn1, Corn2, Fan, Sphere = Object(0,3.87,0.83,1.72467), Object(-0.58,3.87,0.83,1.72467), Object(1.25, 1.94, .95, 2.587), Object(-1.10, 1.35, 0.89, 0.01337)
-Reflector = [Corn1,Corn2, Fan, Sphere]  #create array of all objects with their x,y,z and rcs values
+#data,Reflector = Ex.fan_on()
+data,Reflector = Ex.fan_off()
+#data,Reflector = Ex.corner2()
 
 
 # Geom Sim 3D
@@ -139,14 +127,14 @@ ax[1].set_xlim([-np.pi/4, np.pi/4])#, ax[1].grid(False)
 [rs,asim,Ran,Ang,zs] = RAngCalc(RxSig,k,fs)           #do data processing
 
 levels = np.linspace(-30,0,100) #for deciblels
-cm = ax[0].contourf(np.radians(-asim),rs,20*np.log10(np.abs(zs)/np.sqrt(TxPower)), levels=levels,cmap='jet', extend='both')  #need -angle not sure why yet
+cm = ax[0].contourf(np.radians(-asim),rs,20*np.log10(np.abs(zs)/np.amax(np.abs(zs))), levels=levels,cmap='jet', extend='both')  #need -angle not sure why yet
 cb = fig.colorbar(cm,ax=ax[0],shrink=0.5)
 
 ## Real Data Plotting/Analysis
 
 [r,a,Ra,An,z] = RAngCalc(data,k,fs) #do same as above but with the real data
 
-cm1 = ax[1].contourf(np.radians(a), r,20*np.log10(np.abs(z)/np.sqrt(TxPower)), levels=levels, cmap='jet', extend='both') #
+cm1 = ax[1].contourf(np.radians(a), r,20*np.log10(np.abs(z)/np.amax(np.abs(z))), levels=levels, cmap='jet', extend='both') #
 cb1 = fig.colorbar(cm1,ax=ax[1],shrink=0.5)
 
 
