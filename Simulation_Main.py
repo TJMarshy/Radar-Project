@@ -22,15 +22,22 @@ n2 = 2.5 #concrete floor https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumbe
 
 
 def add_zeros(array):
+    '''Add zero values before and after data to create a 
+        rectangular pulse giving sinc functions after fft'''
 
     a = np.zeros((256,len(array.T)))
-    b = np.append(a,data,0)
-    new = np.append(b,a,0)
+    b = np.append(a,array,0)
+    new = np.append(b,a,0)          #for range sidelobes
+
+    a = np.zeros((len(new),10))
+    b = np.append(a,new,1)
+    new = np.append(b,a,1)          #for angle sidelobes
 
     return new
 
 
 def RAngCalc(data,sweep_slope,fs):
+    '''create Range angle map for a given data set'''
 
     Angle1 = np.linspace(-1,1,len(data.T),endpoint=True)
     Angle1 = np.degrees(np.arcsin(Angle1))                  #arcsin as the array factor is proportional to the sin
@@ -38,33 +45,29 @@ def RAngCalc(data,sweep_slope,fs):
     Freq = np.linspace(0,fs,len(data),endpoint=True)   
     Range = (Freq*3e8) / (2*sweep_slope)
 
-    
-    interp_ratio = 6
-    Angle = np.linspace(-1,1,29*interp_ratio,endpoint=True)
-    Angle = np.degrees(np.arcsin(Angle))  
-    
-
-    interp_mesh = np.array(np.meshgrid(Range, Angle, indexing='ij'))
-    interp_points = np.rollaxis(interp_mesh, 0, 3).reshape((-1, 2)) #create list of cooridnates
-
-
     R = np.fft.fft(data,None,0)
 
     A = np.fft.fft(data,None,1)
     A = np.fft.fftshift(A,1)
 
     ReflecMap = np.fft.fft(R,None,1)
-    ReflecMap = np.fft.fftshift(ReflecMap,1)
+    ReflecMap = np.fft.fftshift(ReflecMap,1)        #create range and angle map for input data
+
+    
+    interp_ratio = 20                                #ratio of initial array elements vs interpolated elements
+    
+    Angle = np.linspace(-1,1,29*interp_ratio,endpoint=True) #create new angle vector to plot against
+    Angle = np.degrees(np.arcsin(Angle))                    #to go from psi to angle representations
+    
+    interp_mesh = np.array(np.meshgrid(Range, Angle, indexing='ij'))
+    interp_points = np.rollaxis(interp_mesh, 0, 3).reshape((-1, 2)) #create list of cooridnates to interpolate at
 
     A = si.interpn((Range,Angle1),A,interp_points)
-
     A = np.reshape(A,(len(Range), len(Angle)))
 
-
     ReflecMap = si.interpn((Range,Angle1),ReflecMap,interp_points)
-
     ReflecMap = np.reshape(ReflecMap,(len(Range), len(Angle)))
-
+    
     return [Range, Angle, R, A, ReflecMap]
 
 def delayedsig(dist):
@@ -81,6 +84,8 @@ data,Reflector = Ex.fan_on()
 #data,Reflector = Ex.corner2()
 #data,Reflector = Ex.big1()
 #data,Reflector = Ex.big2()
+
+data = add_zeros(data)
 
 
 # Geom Sim 3D
@@ -137,7 +142,7 @@ ax[1].set_xlim([-np.pi/4, np.pi/4])#, ax[1].grid(False)
 [rs,asim,Ran,Ang,zs] = RAngCalc(RxSig,k,fs)           #do data processing
 
 levels = np.linspace(-30,0,100) #for deciblels
-cm = ax[0].contourf(np.radians(asim),rs,20*np.log10(np.abs(zs)/np.amax(np.abs(zs))), levels=levels,cmap='jet', extend='both')  #need -angle not sure why yet
+cm = ax[0].contourf(np.radians(-asim),rs,20*np.log10(np.abs(zs)/np.amax(np.abs(zs))), levels=levels,cmap='jet', extend='both')  #need -angle not sure why yet
 cb = fig.colorbar(cm,ax=ax[0],shrink=0.5)
 
 ## Real Data Plotting/Analysis
@@ -164,9 +169,9 @@ ax2.set_xlim([-45, 45])
 ax3.set_ylim([0, 10])
 
 
-for i in range(29):
-    ax1.plot(rs,np.abs(Ran[:,i]))
-    ax2.plot(asim,np.abs(Ang[i,:]))
+for i in range(1):
+    ax1.plot(rs,np.abs(Ran[:,i+10]))
+    ax2.plot(-asim,np.abs(Ang[i+280,:])) #280 is to get to points after all the zeros
 
 
    
@@ -181,9 +186,9 @@ ax6.set_xlim([-45, 45])
 ax7.set_ylim([0, 5])
 
 
-for i in range(29):
-    ax5.plot(r,np.abs(Ra[:,i]))
-    ax6.plot(a,np.abs(An[i,:]))
+for i in range(1):
+    ax5.plot(r,np.abs(Ra[:,i+10]))
+    ax6.plot(a,np.abs(An[i+300,:])) #300 is to get to points after all the zeros
 
 cm2 = ax7.contourf(-a,r,np.abs(z),levels=levels)
 cb2 = fig2.colorbar(cm2)

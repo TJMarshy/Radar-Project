@@ -32,3 +32,4 @@ Finish Profiles of objects in rooms for different data sets E.g. RCS for big ref
 
 Add emtpy array before and after real data to get the same sinc functions
 
+Refactors and sort everything out/document
