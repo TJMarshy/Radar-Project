@@ -2,7 +2,7 @@
 Project for ananlysing simulation and experimnetal data from FMCW radar for range detection.
 
 
-Current Version 1.2
+Current Version 1.3
 
 Features:
 
@@ -24,12 +24,13 @@ Added Experiments file to load different experiment data
 
 Added zeros to sim data and now it almost perfectly matches the sim data and the interpolation is working a dreams
 
+Added profiles to choose which data set to use
+
 Still Need:
 
 Noise?
 RCS? from numerical stuff by propagation group
 Finish Profiles of objects in rooms for different data sets E.g. RCS for big reflector
 
-Add emtpy array before and after real data to get the same sinc functions
 
-Refactors and sort everything out/document
+Refactors and sort everything out/document sort of

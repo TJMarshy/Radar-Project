@@ -12,8 +12,10 @@ class Object():
         self.z = z
         self.rcs = rcs
 
-
-
+'''
+Functions below, load data from a given experiment
+and the corresponding points to simulate
+'''
 
 def fan_on():
     data = sio.loadmat('experiment_1_fan_on.mat')
@@ -57,3 +59,13 @@ def big2():
     Corn1, Corn2 = Object(0,2,0.83,1.72467), Object(-0.58,2,0.83,1.72467)
 
     return data, [Corn1,Corn2]
+
+
+def test():
+
+    data = sio.loadmat('experiment_5_bigerflector.mat')
+    data = data['DATAr']
+
+    Ob, Ob2 = Object(0,3,0.83,1) ,Object(0.217,3,0.83,1)
+
+    return data, [Ob, Ob2]
