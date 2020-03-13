@@ -21,7 +21,7 @@ def fan_on():
     data = sio.loadmat('experiment_1_fan_on.mat')
     data = data['DATAr']
 
-    Corn1, Corn2, Fan, Sphere = Object(0,3.87,0.83,1.72467), Object(-0.58,3.87,0.83,1.72467), Object(1.25, 1.94, .95, 0.5), Object(-1.10, 1.35, 0.89, 0.01337)
+    Corn1, Corn2, Fan, Sphere = Object(0.06,3.87,0.83,1.72467), Object(-0.62,3.87,0.83,1.72467), Object(1.24, 2, .95, 0.05), Object(-1.10, 1.53, 0.89, 0.01337)
     
     return data , [Corn1,Corn2, Fan, Sphere]  #create array of all objects with their x,y,z and rcs values need value for fan off/on
     
@@ -30,7 +30,7 @@ def fan_off():
     data = sio.loadmat('experiment_2_fan_off.mat')
     data = data['DATAr']
 
-    Corn1, Corn2, Fan, Sphere = Object(0,3.87,0.83,1.72467), Object(-0.58,3.87,0.83,1.72467), Object(1.25, 1.94, .95, 2.587), Object(-1.10, 1.35, 0.89, 0.01337)
+    Corn1, Corn2, Fan, Sphere = Object(0,3.87,0.83,1.72467), Object(-0.62,3.87,0.83,1.72467), Object(1.24, 2, .95, 2.587), Object(-1.10, 1.53, 0.89, 0.01337)
     
     return data , [Corn1,Corn2, Fan, Sphere]  #create array of all objects with their x,y,z and rcs values need value for fan off/on
 

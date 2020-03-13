@@ -140,14 +140,14 @@ for Obj in Reflector:  #loop through all objects and array elements
         dist1 = np.sqrt((RxArray[i][0] - X1)**2 + (RxArray[i][1] - Y1)**2 + (RxArray[i][2] - Z1)**2)           #array to ground distance
         dist2 = np.sqrt((Obj.x - X1)**2 + (Obj.y - Y1)**2 + (Obj.z - Z1)**2)                                   #ground to object distance
 
-        theta = np.arctan((Y1-Obj.x)/Obj.z)                                                                    #angle of incidence wrt the normal
+        theta = np.abs(np.arctan((Y1-Obj.y)/Obj.z))                                                                    #angle of incidence wrt the normal
 
-        Rp = np.abs((n1*np.sqrt(1-(n1*np.sin(theta)/n2)**2) - n2*np.cos(theta))/(n1*np.sqrt(1-(n1*np.sin(theta)/n2)**2) + n2*np.cos(theta)))**2#assuming p polarised need to check
-         
+        #Ref = np.abs((n1*np.sqrt(1-(n1*np.sin(theta)/n2)**2) - n2*np.cos(theta))/(n1*np.sqrt(1-(n1*np.sin(theta)/n2)**2) + n2*np.cos(theta)))**2 #assuming TE polarised need to check actually is s i think because from radar stats horo and vertical beamwidths
+        Ref = np.abs((n1*np.cos(theta) - n2*np.sqrt(1-(n1*np.sin(theta)/n2)**2) )/(n1*np.cos(theta) + n2*np.sqrt(1-(n1*np.sin(theta)/n2)**2) ))**2 #TM     
     
-        Temp[:,i] += delayedsig(2*dist) * np.sqrt(numerator / (dist**4))                                       #sum each rays signal at each receiver
-        + delayedsig(2*(dist1+dist2)) * np.sqrt((Rp**2 * numerator) / (dist1+dist2)**4)                        #then multiply by power received     
-        + 2 * delayedsig((dist+dist1+dist2)) * np.sqrt((Rp * numerator) / (dist**2 * (dist1 + dist2)**2))      
+        Temp[:,i] += (delayedsig(2*dist) * np.sqrt(numerator / (dist**4))                                       #sum each rays signal at each receiver
+        +( delayedsig(2*(dist1+dist2)) * np.sqrt((Ref**2 * numerator) / (dist1+dist2)**4))                        #then multiply by power received     
+        + (2 * delayedsig((dist+dist1+dist2)) * np.sqrt((Ref * numerator) / (dist**2 * (dist1 + dist2)**2))))      
        
                  
 
@@ -167,10 +167,10 @@ Plotting Functions Below
 
 fig, ax = plt.subplots(1,2,subplot_kw=dict(projection='polar'))
 ax[0].set_theta_zero_location("N"), ax[0].set_theta_direction(-1), ax[0].set_ylim([0, 5])   #create polar plots for comparing real data to simulation
-ax[0].set_xlim([-np.pi/4, np.pi/4])#, ax[0].grid(False)
+ax[0].set_xlim([-np.pi/4, np.pi/4]), ax[0].set_xlabel('Angle /$^{\circ}$'), ax[0].set_ylabel('Range /m'), ax[0].set_title('Simulated Data')#, ax[0].grid(False), 
 
 ax[1].set_theta_zero_location("N"), ax[1].set_theta_direction(-1), ax[1].set_ylim([0, 5])
-ax[1].set_xlim([-np.pi/4, np.pi/4])#, ax[1].grid(False)
+ax[1].set_xlim([-np.pi/4, np.pi/4]), ax[1].set_xlabel('Angle /$^{\circ}$'), ax[1].set_ylabel('Range /m'), ax[1].set_title('Experimental Data')#, ax[1].grid(False)
 
 levels = np.linspace(-35,0,100) # create contour levels for decibels
 
@@ -200,14 +200,14 @@ ax1.set_xlabel('Range /m')
 ax1.set_title('Range Profile')
 
 ax2.set_xlim([-45, 45])
-ax2.set_xlabel('Signal AOA $^{\circ}$')
+ax2.set_xlabel('Signal AOA /$^{\circ}$')
 ax2.set_title('Angular Profile')
 
 ax3.set_xlim([0.5, 5])
 ax3.set_xlabel('Range /m')
 
 ax4.set_xlim([-45, 45])
-ax4.set_xlabel('Signal AOA $^{\circ}$')
+ax4.set_xlabel('Signal AOA /$^{\circ}$')
 
 
 ax1.plot(rs,np.abs(Ran[:,int(len(Ran.T) / 2)]))  # int function just finds middle element along array 
