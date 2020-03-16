@@ -15,9 +15,22 @@ fss = 2e9  #sample rate to generate waveforms
 t = np.arange(0, tm, 1/fss)
 TxPower = 1e-2 #/watts  10dBm
 txGain = 17 #change to function of angle later maybe
-rxGain = 15
+
+rxGain = np.loadtxt('Gain from datasheet.csv',delimiter=',')
+rxGain_H= rxGain[:,0:2]
+rxGain_H[:,1] = 10**(rxGain_H[:,1]/10)      #convert from db to get non negative values
+rxGain_V = rxGain[:,::2]
+rxGain_V[:,1] = 10**(rxGain_V[:,1]/10)
+
 n1 = 1 #refractive indicies for fresenel
 n2 = 2.5 #concrete floor https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=504907
+
+def Calc_Gain(theta):
+    '''currently treat horozontal as fixed 15'''
+    idx = np.abs(rxGain_V[:,0] - np.degrees(theta)).argmin()
+    gain = 10**(15/10) * rxGain_V[idx,1]
+    return gain
+
 
 
 def add_zeros(array):
@@ -112,7 +125,6 @@ def data_set():
 
     return data, Reflector
 
-data, Reflector = data_set()
 
 ''' 
 Geometric 3-D Simulation
@@ -121,42 +133,57 @@ Signals are delayed and has contributions from
 reflected rays
 '''
 
-RxArray = [[(i-14)*lamb/2,0,0.98] for i in range(29)]   #create Uniform linear spaced array
+def SimData(array_size,multi=0):
 
-Temp = np.zeros((len(t),len(RxArray)),dtype=complex)                #to store data before mixing/pulse compression?
-RxSig = np.zeros((int(len(t)/(fss/fs)),len(RxArray)),dtype=complex) #smaller array to store post compression signal
+    RxArray = [[(i-(array_size-1)/2)*lamb/2,0,0.98] for i in range(array_size)]   #create Uniform linear spaced array
+
+    Temp = np.zeros((len(t),len(RxArray)),dtype=complex)                #to store data before mixing/pulse compression?
+    RxSig = np.zeros((int(len(t)/(fss/fs)),len(RxArray)),dtype=complex) #smaller array to store post compression signal
 
 
-for Obj in Reflector:  #loop through all objects and array elements
+    for Obj in Reflector:  #loop through all objects and array elements
 
-    numerator =  (TxPower * (txGain*rxGain) * Obj.rcs * (lamb**2)) / ((4*np.pi)**3)   #common numerator used for determining power           
-    for i in range(len(RxArray)):
+        numerator =  (TxPower * txGain * Obj.rcs * (lamb**2)) / ((4*np.pi)**3)   #common numerator used for determining power           
+        for i in range(len(RxArray)):
        
-        Y1 = (RxArray[i][1] * Obj.z + Obj.y * RxArray[i][2]) / (Obj.z + RxArray[i][2])              #find x,y,z position of reflection point
-        X1 = (RxArray[i][0] + Obj.x) /2
-        Z1 = 0
+            Y1 = (RxArray[i][1] * Obj.z + Obj.y * RxArray[i][2]) / (Obj.z + RxArray[i][2])              #find x,y,z position of reflection point could move outside as doesnt change much for each array element
+            X1 = (RxArray[i][0] + Obj.x) /2
+            Z1 = 0
 
-        dist = np.sqrt( (RxArray[i][0]-Obj.x)**2 + (RxArray[i][1]-Obj.y)**2 + (RxArray[i][2]-Obj.z)**2 )       #Direct Ray distance
-        dist1 = np.sqrt((RxArray[i][0] - X1)**2 + (RxArray[i][1] - Y1)**2 + (RxArray[i][2] - Z1)**2)           #array to ground distance
-        dist2 = np.sqrt((Obj.x - X1)**2 + (Obj.y - Y1)**2 + (Obj.z - Z1)**2)                                   #ground to object distance
+            dist = np.sqrt( (RxArray[i][0]-Obj.x)**2 + (RxArray[i][1]-Obj.y)**2 + (RxArray[i][2]-Obj.z)**2 )       #Direct Ray distance
+            dist1 = np.sqrt((RxArray[i][0] - X1)**2 + (RxArray[i][1] - Y1)**2 + (RxArray[i][2] - Z1)**2)           #array to ground distance
+            dist2 = np.sqrt((Obj.x - X1)**2 + (Obj.y - Y1)**2 + (Obj.z - Z1)**2)                                   #ground to object distance
+            
+            incidence = np.abs(np.arctan((Y1-Obj.y)/Obj.z))                                                                    #angle of incidence wrt the normal
+            #Ref = np.abs((n1*np.sqrt(1-(n1*np.sin(incidence)/n2)**2) - n2*np.cos(incidence))/(n1*np.sqrt(1-(n1*np.sin(incidence)/n2)**2) + n2*np.cos(incidence)))**2 #assuming TE polarised need to check actually is s i think because from radar stats horo and vertical beamwidths
+            Ref = np.abs((n1*np.cos(incidence) - n2*np.sqrt(1-(n1*np.sin(incidence)/n2)**2) )/(n1*np.cos(incidence) + n2*np.sqrt(1-(n1*np.sin(incidence)/n2)**2) ))**2 #TM     
 
-        theta = np.abs(np.arctan((Y1-Obj.y)/Obj.z))                                                                    #angle of incidence wrt the normal
+            theta = np.arctan(Obj.z/(Y1 - Obj.y))
+            Gain = Calc_Gain(theta)
+            LOS_Gain = Calc_Gain(0)
+            if multi == 0:
+                Temp[:,i] += (delayedsig(2*dist) * np.sqrt((LOS_Gain * numerator) / (dist**4))     )                                  #sum each rays signal at each receiver
 
-        #Ref = np.abs((n1*np.sqrt(1-(n1*np.sin(theta)/n2)**2) - n2*np.cos(theta))/(n1*np.sqrt(1-(n1*np.sin(theta)/n2)**2) + n2*np.cos(theta)))**2 #assuming TE polarised need to check actually is s i think because from radar stats horo and vertical beamwidths
-        Ref = np.abs((n1*np.cos(theta) - n2*np.sqrt(1-(n1*np.sin(theta)/n2)**2) )/(n1*np.cos(theta) + n2*np.sqrt(1-(n1*np.sin(theta)/n2)**2) ))**2 #TM     
+            else:
+                Temp[:,i] += (delayedsig(2*dist) * np.sqrt((LOS_Gain * numerator)  / (dist**4))
+                +( delayedsig(2*(dist1+dist2)) * np.sqrt((Ref**2 * Gain * numerator) / (dist1+dist2)**4))                        #then multiply by power received     
+                + (delayedsig((dist+dist1+dist2)) * np.sqrt((Ref * Gain * numerator) / (dist**2 * (dist1 + dist2)**2)))
+                + (delayedsig((dist+dist1+dist2)) * np.sqrt((Ref * LOS_Gain * numerator) / (dist**2 * (dist1 + dist2)**2))))      #receive straight on one
+       
     
-        Temp[:,i] += (delayedsig(2*dist) * np.sqrt(numerator / (dist**4))                                       #sum each rays signal at each receiver
-        +( delayedsig(2*(dist1+dist2)) * np.sqrt((Ref**2 * numerator) / (dist1+dist2)**4))                        #then multiply by power received     
-        + (2 * delayedsig((dist+dist1+dist2)) * np.sqrt((Ref * numerator) / (dist**2 * (dist1 + dist2)**2))))      
-       
-                 
-
-mix = np.conj(Temp) * np.sqrt(TxPower)*np.exp(np.pi*1j*(fc*t+k*t**2))[:, np.newaxis]  #stretch process with original signal          
-RxSig[:,:] = mix[0:-1:int(fss/fs)][:]#Reduce sampling rate to 2e6 after stretch
-RxSig = add_zeros(RxSig)
+    mix = np.conj(Temp) * np.sqrt(TxPower)*np.exp(np.pi*1j*(fc*t+k*t**2))[:, np.newaxis]  #stretch process with original signal          
+    RxSig[:,:] = mix[0:-1:int(fss/fs)][:]#Reduce sampling rate to 2e6 after stretch
+    RxSig = add_zeros(RxSig)
+    
+    return RxSig    
 
 
 
+
+
+data, Reflector = data_set()
+#RxSig = SimData(29,multi=0)
+RxSig = SimData(29,multi=1)
 
 
 '''

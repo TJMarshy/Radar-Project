@@ -26,11 +26,14 @@ Added zeros to sim data and now it almost perfectly matches the sim data and the
 
 Added profiles to choose which data set to use
 
+Added vertical gain
+
 Still Need:
 
 Noise?
 RCS? from numerical stuff by propagation group
 Finish Profiles of objects in rooms for different data sets E.g. RCS for big reflector
+maybe add vertical gain from transmission
 
 
 Refactors and sort everything out/document sort of
