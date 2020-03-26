@@ -182,8 +182,9 @@ def SimData(array_size,multi=0):
 
 
 data, Reflector = data_set()
-#RxSig = SimData(29,multi=0)
-RxSig = SimData(29,multi=1)
+multiple_rays = int(input('Enter 1 to include reflected rays, 0 to not: '))
+
+RxSig = SimData(29,multi=multiple_rays)
 
 
 '''

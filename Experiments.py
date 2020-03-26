@@ -66,6 +66,6 @@ def test():
     data = sio.loadmat('experiment_5_bigerflector.mat')
     data = data['DATAr']
 
-    Ob, Ob2 = Object(0,3,0.83,1) ,Object(0.217,3,0.83,1)
+    Ob = Object(0,3,0.83,1) 
 
     return data, [Ob]
